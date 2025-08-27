@@ -1,24 +1,11 @@
 """GPT API와 통신하기 위한 클라이언트 모듈"""
 
-imp    def run_test_sets(
-        self,
-        question_file: str,
-        set_size: int,
-        set_count: int,
-        output_dir: str,
-        system_prompt: str = "",
-        answer_file: Optional[str] = None,
-        evaluator: Optional["ResponseEvaluator"] = None,
-        **kwargs,
-    ) -> None:
-        """테스트 세트를 생성하고 실행"""
-        results_list = []  # 평가 결과를 저장할 리스트import random
+import openai
+import random
 import re
 from pathlib import Path
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Optional
 from openai import OpenAI
-
-from .evaluator import ResponseEvaluator
 
 
 class GPTClient:
@@ -55,7 +42,6 @@ class GPTClient:
         output_dir: str,
         system_prompt: str = "",
         answer_file: Optional[str] = None,
-        evaluator: Optional["ResponseEvaluator"] = None,  # 평가기 파라미터 추가
         **kwargs,
     ) -> None:
         """`test_questions.txt`에서 무작위 테스트 세트를 생성하고 GPT 응답을 저장"""
@@ -151,12 +137,7 @@ class GPTClient:
                 gold_file = out_dir / f"gold_set_{i+1}.txt"
                 gold_file.write_text("\n".join(gold_lines), encoding="utf-8")
 
-                # 평가 수행
-                result = evaluator.evaluate_from_files(
-                    str(gold_file),
-                    str(pred_file),
-                    str(out_dir / f"score_report_set_{i+1}.txt")
-                )
+                report_file = out_dir / f"score_report_set_{i+1}.txt"
                 result = evaluator.evaluate_from_files(
                     str(gold_file), str(pred_file), str(report_file)
                 )
