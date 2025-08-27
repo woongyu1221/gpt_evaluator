@@ -1,10 +1,12 @@
 """GPT API와 통신하기 위한 클라이언트 모듈"""
+
 import openai
 import random
 import re
 from pathlib import Path
 from typing import Optional
 from openai import OpenAI
+
 
 class GPTClient:
     def __init__(self, api_key: str):
@@ -49,18 +51,17 @@ class GPTClient:
 
         # 번호와 질문을 함께 파싱
         questions = []
+        q_pat = re.compile(r"^\s*(\d+)\.\s*(.*)$")
         with q_path.open(encoding="utf-8") as f:
             for line in f:
                 s = line.strip()
                 if not s:
                     continue
-                if "." in s:
-                    idx_part, text_part = s.split(".", 1)
-                    try:
-                        idx = int(idx_part.strip())
-                    except ValueError:
-                        continue
-                    questions.append((idx, text_part.strip()))
+                mo = q_pat.match(s)
+                if mo:
+                    idx = int(mo.group(1))
+                    text = mo.group(2).strip()
+                    questions.append((idx, text))
                 else:
                     questions.append((None, s))
 
@@ -88,16 +89,20 @@ class GPTClient:
 
         total_questions = len(questions)
         if set_size > total_questions:
-            set_size = total_questions
-        results_list = []
-        evaluator = None
-        if answers:
-            from .evaluator import ResponseEvaluator
-
-            evaluator = ResponseEvaluator(self)
-
+            raise ValueError(
+                f"요청한 set_size {set_size}가 전체 질문 수 {total_questions}보다 큽니다"
+            )
         for i in range(set_count):
-            indices = random.sample(range(total_questions), set_size)
+            # Generate unique random indices within the full question range.
+            # If duplicates occur, keep drawing until the requested size is met.
+            indices = set()
+            while len(indices) < set_size:
+                idx = random.randrange(total_questions)
+                if 0 <= idx < total_questions:
+                    indices.add(idx)
+
+            indices = list(indices)
+            random.shuffle(indices)
             sampled = [questions[j] for j in indices]
 
             # Create a prompt using the original question numbers so that
@@ -113,7 +118,9 @@ class GPTClient:
             # sampled questions. We rely on the order of the responses
             # corresponding to the order of the questions.
             pred_lines = []
-            resp_lines = [line.strip() for line in response.splitlines() if line.strip()]
+            resp_lines = [
+                line.strip() for line in response.splitlines() if line.strip()
+            ]
             for (idx, _), line in zip(sampled, resp_lines):
                 if "." in line:
                     _, line = line.split(".", 1)
