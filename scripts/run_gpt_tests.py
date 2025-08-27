@@ -1,7 +1,12 @@
 """Utility script to run GPT classification on random test sets."""
 
 import argparse
+import sys
 from pathlib import Path
+
+# Add project root directory to Python path
+PROJECT_ROOT = Path(__file__).parent.parent
+sys.path.append(str(PROJECT_ROOT))
 
 from src.config import Config
 from src.gpt_client import GPTClient
