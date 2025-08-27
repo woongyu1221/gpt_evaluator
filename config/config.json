@@ -1,0 +1,11 @@
+{
+    "api": {
+        "openai_api_key": "your-api-key-here"
+    },
+    "evaluation_criteria": {
+        "relevance": "답변이 질문과 얼마나 관련이 있는지",
+        "accuracy": "제공된 정보의 정확성",
+        "completeness": "답변이 질문의 모든 측면을 다루었는지",
+        "clarity": "답변이 명확하고 이해하기 쉬운지"
+    }
+}
