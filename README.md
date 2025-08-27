@@ -97,6 +97,16 @@ result = evaluator.evaluate_response(
 )
 ```
 
+### 명령줄 실행
+
+무작위 테스트 세트에 대해 GPT 분류를 실행하려면 아래 명령만으로 충분합니다.
+
+```bash
+python scripts/run_gpt_tests.py
+```
+
+`config/system_prompt.txt`에 저장된 시스템 프롬프트와 기타 기본값을 자동으로 사용하므로 별도의 인자를 전달할 필요가 없습니다. 필요한 경우 `--set-size` 등 인자를 직접 지정해 덮어쓸 수 있습니다.
+
 ## 확장 가능성
 
 - 추가 평가 기준 구현
