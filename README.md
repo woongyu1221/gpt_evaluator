@@ -146,5 +146,7 @@ pip install -r requirements.txt
 python scripts/make_csv.py
 
 # 무작위 테스트 세트에 대해 GPT 분류 및 평가 실행
+# test 데이터셋 크기 지정
 python scripts/run_gpt_tests.py
+
 ```
