@@ -2,8 +2,11 @@ import json
 import os
 from typing import Dict, Any
 
+from dotenv import load_dotenv
+
 class Config:
     def __init__(self, config_path: str):
+        load_dotenv()
         self.config_path = config_path
         self.config = self._load_config()
 
@@ -21,7 +24,10 @@ class Config:
         """
         OpenAI API 키 반환
         """
-        return self.config['api']['openai_api_key']
+        api_key = os.getenv("OPENAI_API_KEY")
+        if api_key:
+            return api_key
+        return self.config.get('api', {}).get('openai_api_key', '')
 
     def get_evaluation_criteria(self) -> Dict[str, str]:
         """
