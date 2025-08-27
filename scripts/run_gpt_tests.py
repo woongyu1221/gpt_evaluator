@@ -10,6 +10,7 @@ sys.path.append(str(PROJECT_ROOT))
 
 from src.config import Config
 from src.gpt_client import GPTClient
+from src.evaluator import ResponseEvaluator
 
 def _load_system_prompt(path: str) -> str:
     """Read the system prompt from ``path`` if it exists."""
@@ -25,7 +26,7 @@ def main() -> None:
     parser.add_argument(
         "--question-file", default="data/processed/test_questions.txt"
     )
-    parser.add_argument("--set-size", type=int, default=50)
+    parser.add_argument("--set-size", type=int, default=10)
     parser.add_argument("--set-count", type=int, default=2)
     parser.add_argument("--output-dir", default="data/results")
     parser.add_argument("--system-prompt", default=None)
@@ -40,6 +41,8 @@ def main() -> None:
     system_prompt = args.system_prompt or _load_system_prompt(args.system_prompt_file)
 
     client = GPTClient(cfg.get_api_key())
+    evaluator = ResponseEvaluator(client)  # ResponseEvaluator 인스턴스 생성
+    
     client.run_test_sets(
         question_file=args.question_file,
         set_size=args.set_size,
@@ -47,6 +50,7 @@ def main() -> None:
         output_dir=args.output_dir,
         system_prompt=system_prompt,
         answer_file=args.answer_file,
+        evaluator=evaluator,  # evaluator 전달
     )
 
 if __name__ == "__main__":
