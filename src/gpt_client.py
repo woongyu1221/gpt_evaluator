@@ -86,41 +86,41 @@ class GPTClient:
         out_dir = Path(output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
 
+        total_questions = len(questions)
+        if set_size > total_questions:
+            set_size = total_questions
+
         for i in range(set_count):
-            sampled = random.sample(questions, set_size)
+            indices = random.sample(range(total_questions), set_size)
+            sampled = [questions[j] for j in indices]
 
-            # Assign a random ID to each sampled question so the numbering
-            # is not sequential (e.g., 1..N).  This ID will be used for
-            # prompting, prediction parsing, and gold-label mapping.
-            rand_ids = random.sample(range(1, 1_000_000), set_size)
-            paired = list(zip(rand_ids, sampled))
-
-            # Create prompt using the random IDs
-            prompt = "\n".join(f"{rid}. {q}" for rid, (_, q) in paired)
+            # Create a prompt using the original question numbers so that
+            # numbering is consistent with the source files.
+            prompt = "\n".join(f"{idx}. {q}" for idx, q in sampled)
             response = self.get_response(prompt, system_prompt, **kwargs)
 
-            # Save the question set with the random IDs
+            # Save the question set with the original numbering
             q_file = out_dir / f"questions_set_{i+1}.txt"
             q_file.write_text(prompt, encoding="utf-8")
 
-            # Post-process GPT response to replace numbering with our
-            # randomly assigned IDs. We rely on the order of the responses
+            # Post-process GPT response to ensure numbering matches the
+            # sampled questions. We rely on the order of the responses
             # corresponding to the order of the questions.
             pred_lines = []
             resp_lines = [line.strip() for line in response.splitlines() if line.strip()]
-            for (rid, _), line in zip(paired, resp_lines):
+            for (idx, _), line in zip(sampled, resp_lines):
                 if "." in line:
                     _, line = line.split(".", 1)
-                pred_lines.append(f"{rid}. {line.strip()}")
+                pred_lines.append(f"{idx}. {line.strip()}")
 
             pred_file = out_dir / f"predictions_set_{i+1}.txt"
             pred_file.write_text("\n".join(pred_lines), encoding="utf-8")
 
             if answers:
                 gold_lines = []
-                for rid, (idx, _) in paired:
+                for idx, _ in sampled:
                     if idx in answers:
-                        gold_lines.append(f"{rid}. {','.join(answers[idx])}")
+                        gold_lines.append(f"{idx}. {','.join(answers[idx])}")
                 gold_file = out_dir / f"gold_set_{i+1}.txt"
                 gold_file.write_text("\n".join(gold_lines), encoding="utf-8")
 
