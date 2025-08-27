@@ -21,6 +21,7 @@ gpt_evaluator/
 
 ### GPTClient (`src/gpt_client.py`)
 - OpenAI GPT API와의 통신을 담당
+- `gpt-4o` 모델을 사용하며 시스템 프롬프트와 질문을 전달해 답변을 생성
 - API 호출 및 응답 처리
 - 에러 핸들링
 
@@ -78,6 +79,12 @@ config = Config("config/config.json")
 
 # GPT 클라이언트 초기화
 gpt_client = GPTClient(config.get_api_key())
+
+# 시스템 프롬프트와 질문을 이용한 직접 호출
+answer = gpt_client.get_response(
+    question="2+2는?",
+    system_prompt="당신은 수학을 잘하는 친절한 도우미입니다.",
+)
 
 # 평가기 초기화
 evaluator = ResponseEvaluator(gpt_client)
