@@ -11,14 +11,12 @@ sys.path.append(str(PROJECT_ROOT))
 from src.config import Config
 from src.gpt_client import GPTClient
 
-
 def _load_system_prompt(path: str) -> str:
     """Read the system prompt from ``path`` if it exists."""
     p = Path(path)
     if not p.exists():
         return ""
     return p.read_text(encoding="utf-8").strip()
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -27,8 +25,8 @@ def main() -> None:
     parser.add_argument(
         "--question-file", default="data/processed/test_questions.txt"
     )
-    parser.add_argument("--set-size", type=int, default=10)
-    parser.add_argument("--set-count", type=int, default=1)
+    parser.add_argument("--set-size", type=int, default=50)
+    parser.add_argument("--set-count", type=int, default=2)
     parser.add_argument("--output-dir", default="data/results")
     parser.add_argument("--system-prompt", default=None)
     parser.add_argument(
@@ -50,7 +48,6 @@ def main() -> None:
         system_prompt=system_prompt,
         answer_file=args.answer_file,
     )
-
 
 if __name__ == "__main__":
     main()
