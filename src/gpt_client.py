@@ -88,18 +88,39 @@ class GPTClient:
 
         for i in range(set_count):
             sampled = random.sample(questions, set_size)
-            prompt = "\n".join(f"{idx}. {q}" for idx, q in sampled)
+
+            # Assign a random ID to each sampled question so the numbering
+            # is not sequential (e.g., 1..N).  This ID will be used for
+            # prompting, prediction parsing, and gold-label mapping.
+            rand_ids = random.sample(range(1, 1_000_000), set_size)
+            paired = list(zip(rand_ids, sampled))
+
+            # Create prompt using the random IDs
+            prompt = "\n".join(f"{rid}. {q}" for rid, (_, q) in paired)
             response = self.get_response(prompt, system_prompt, **kwargs)
+
+            # Save the question set with the random IDs
             q_file = out_dir / f"questions_set_{i+1}.txt"
-            pred_file = out_dir / f"predictions_set_{i+1}.txt"
             q_file.write_text(prompt, encoding="utf-8")
-            pred_file.write_text(response, encoding="utf-8")
+
+            # Post-process GPT response to replace numbering with our
+            # randomly assigned IDs. We rely on the order of the responses
+            # corresponding to the order of the questions.
+            pred_lines = []
+            resp_lines = [line.strip() for line in response.splitlines() if line.strip()]
+            for (rid, _), line in zip(paired, resp_lines):
+                if "." in line:
+                    _, line = line.split(".", 1)
+                pred_lines.append(f"{rid}. {line.strip()}")
+
+            pred_file = out_dir / f"predictions_set_{i+1}.txt"
+            pred_file.write_text("\n".join(pred_lines), encoding="utf-8")
 
             if answers:
                 gold_lines = []
-                for idx, _ in sampled:
+                for rid, (idx, _) in paired:
                     if idx in answers:
-                        gold_lines.append(f"{idx}. {','.join(answers[idx])}")
+                        gold_lines.append(f"{rid}. {','.join(answers[idx])}")
                 gold_file = out_dir / f"gold_set_{i+1}.txt"
                 gold_file.write_text("\n".join(gold_lines), encoding="utf-8")
 
