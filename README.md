@@ -13,7 +13,7 @@ gpt_evaluator/
 │   └── config.py         # 설정 관리
 ├── tests/                # 테스트 코드
 ├── config/               # 설정 파일
-│   └── config.json      # API 키 및 평가 기준 설정
+│   └── config.json      # 평가 기준 설정
 └── data/                # 데이터 저장 디렉토리
 ```
 
@@ -32,17 +32,20 @@ gpt_evaluator/
 
 ### Config (`src/config.py`)
 - 설정 파일 로드 및 관리
-- API 키 및 평가 기준 제공
+- `.env`에서 API 키 로드 및 평가 기준 제공
 
 ## 설정
 
-`config/config.json` 파일에서 다음 설정을 구성할 수 있습니다:
+프로젝트 루트에 `.env` 파일을 생성하고 OpenAI API 키를 설정합니다:
+
+```
+OPENAI_API_KEY=your-api-key-here
+```
+
+`config/config.json` 파일에서는 평가 기준을 구성합니다:
 
 ```json
 {
-    "api": {
-        "openai_api_key": "your-api-key-here"
-    },
     "evaluation_criteria": {
         "relevance": "답변이 질문과 얼마나 관련이 있는지",
         "accuracy": "제공된 정보의 정확성",
@@ -62,11 +65,11 @@ cd gpt_evaluator
 
 2. 의존성 설치
 ```bash
-pip install openai
+pip install openai python-dotenv
 ```
 
-3. 설정 파일 수정
-- `config/config.json` 파일에서 OpenAI API 키 설정
+3. 환경 변수 설정
+- 프로젝트 루트에 `.env` 파일을 생성하여 OpenAI API 키 저장
 
 4. 사용 예시
 ```python
