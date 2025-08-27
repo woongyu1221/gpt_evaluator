@@ -191,8 +191,8 @@ class GPTClient:
                     )
                     f.write(f"(참고) exact match: {exact_avg:.4f}\n")
 
-                if wrong_all:
-                    f.write("\n===== 전체 오답 모음 =====\n")
-                    for set_idx, qid, g, p in wrong_all:
-                        f.write(f"[세트 {set_idx}] {qid}. 정답: {g} | 예측: {p}\n")
+                # if wrong_all:
+                #     f.write("\n===== 전체 오답 모음 =====\n")
+                #     for set_idx, qid, g, p in wrong_all:
+                #         f.write(f"[세트 {set_idx}] {qid}. 정답: {g} | 예측: {p}\n")
 
