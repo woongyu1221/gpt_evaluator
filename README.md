@@ -24,6 +24,7 @@ gpt_evaluator/
 - `gpt-4o` 모델을 사용하며 시스템 프롬프트와 질문을 전달해 답변을 생성
 - API 호출 및 응답 처리
 - 에러 핸들링
+- 기본 `temperature`는 0.4이며 필요에 따라 `get_response` 호출 시 변경 가능
 
 ### ResponseEvaluator (`src/evaluator.py`)
 - 답변 평가 로직 구현
@@ -87,6 +88,7 @@ gpt_client = GPTClient(config.get_api_key())
 answer = gpt_client.get_response(
     question="2+2는?",
     system_prompt="당신은 수학을 잘하는 친절한 도우미입니다.",
+    temperature=0.4,  # 기본값은 0.4이며 필요 시 조절 가능
 )
 
 # 평가기 초기화

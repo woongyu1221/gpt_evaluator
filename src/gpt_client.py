@@ -10,11 +10,20 @@ class GPTClient:
     def __init__(self, api_key: str):
         self.client = OpenAI(api_key=api_key)
 
-    def get_response(self, question: str, system_prompt: str = "", **kwargs) -> str:
+    def get_response(
+        self,
+        question: str,
+        system_prompt: str = "",
+        temperature: float = 0.4,
+        **kwargs,
+    ) -> str:
         messages = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": question})
+
+        # 기본 temperature 값을 설정하되, 전달된 인자가 있으면 우선한다.
+        kwargs.setdefault("temperature", temperature)
 
         response = self.client.chat.completions.create(
             model="gpt-4o",
