@@ -151,6 +151,7 @@ class GPTClient:
         if results_list:
             summary_file = out_dir / "score_report_summary.txt"
             with summary_file.open("w", encoding="utf-8") as f:
+                wrong_all = []
                 for idx, res in enumerate(results_list, 1):
                     f.write(f"===== 세트 {idx} =====\n")
                     f.write(f"샘플 수: {res['total_samples']}\n")
@@ -159,7 +160,14 @@ class GPTClient:
                     f.write(
                         f"전체 평균 점수(4속성 평균): {res['overall_average']:.4f}\n"
                     )
-                    f.write(f"(참고) exact match: {res['exact_match']:.4f}\n\n")
+                    f.write(f"(참고) exact match: {res['exact_match']:.4f}\n")
+                    wrong_samples = res.get("wrong_samples")
+                    if wrong_samples:
+                        f.write("----- 오답 상세 -----\n")
+                        for qid, g, p in wrong_samples:
+                            f.write(f"{qid}. 정답: {g} | 예측: {p}\n")
+                            wrong_all.append((idx, qid, g, p))
+                    f.write("\n")
 
                 total_samples = sum(r["total_samples"] for r in results_list)
                 slot_totals = {attr: 0.0 for attr in evaluator.ATTRS}
@@ -182,4 +190,9 @@ class GPTClient:
                         f"전체 평균 점수(4속성 평균): {overall_avg:.4f}\n"
                     )
                     f.write(f"(참고) exact match: {exact_avg:.4f}\n")
+
+                if wrong_all:
+                    f.write("\n===== 전체 오답 모음 =====\n")
+                    for set_idx, qid, g, p in wrong_all:
+                        f.write(f"[세트 {set_idx}] {qid}. 정답: {g} | 예측: {p}\n")
 
