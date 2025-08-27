@@ -147,6 +147,12 @@ class ResponseEvaluator:
             f"오답 수: {results['wrong_count']}"
         ])
 
+        wrong_samples = results.get("wrong_samples")
+        if wrong_samples:
+            lines.append("===== 오답 상세 =====")
+            for idx, g, p in wrong_samples:
+                lines.append(f"{idx}. 정답: {g} | 예측: {p}")
+
         with open(output_file, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
 
