@@ -11,10 +11,16 @@ gpt_evaluator/
 │   ├── gpt_client.py     # GPT API 통신 처리
 │   ├── evaluator.py      # 답변 평가 로직
 │   └── config.py         # 설정 관리
-├── tests/                # 테스트 코드
+├── scripts/              # 유틸리티 스크립트
+│   ├── make_csv.py       # 원본 CSV를 질문/정답 파일로 변환
+│   └── run_gpt_tests.py  # 무작위 테스트 세트 실행
 ├── config/               # 설정 파일
-│   └── config.json      # 평가 기준 설정
-└── data/                # 데이터 저장 디렉토리
+│   ├── config.json       # 평가 기준 설정
+│   └── system_prompt.txt # 기본 시스템 프롬프트
+└── data/                 # 데이터 저장 디렉토리
+    ├── raw/              # 원본 CSV 등
+    ├── processed/        # 질문·정답 텍스트
+    └── results/          # GPT 결과 및 보고서
 ```
 
 ## 주요 컴포넌트
@@ -66,13 +72,20 @@ cd gpt_evaluator
 
 2. 의존성 설치
 ```bash
-pip install openai python-dotenv
+pip install -r requirements.txt
 ```
 
 3. 환경 변수 설정
 - 프로젝트 루트에 `.env` 파일을 생성하여 OpenAI API 키 저장
 
-4. 사용 예시
+4. (옵션) CSV 데이터 전처리
+```bash
+python scripts/make_csv.py
+```
+- `data/raw/test_case.csv`을 읽어 `data/processed/test_questions.txt`,
+  `data/processed/test_answers.txt`를 생성합니다.
+
+5. 사용 예시
 ```python
 from src.config import Config
 from src.gpt_client import GPTClient
@@ -104,13 +117,17 @@ result = evaluator.evaluate_response(
 
 ### 명령줄 실행
 
-무작위 테스트 세트에 대해 GPT 분류를 실행하려면 아래 명령만으로 충분합니다.
+데이터를 준비한 뒤에는 다음 스크립트들로 전체 과정을 실행할 수 있습니다.
 
 ```bash
+# 질문·정답 텍스트 생성 (data/raw/test_case.csv 필요)
+python scripts/make_csv.py
+
+# 무작위 테스트 세트에 대해 GPT 분류 및 평가 실행
 python scripts/run_gpt_tests.py
 ```
 
-`config/system_prompt.txt`에 저장된 시스템 프롬프트와 기타 기본값을 자동으로 사용하므로 별도의 인자를 전달할 필요가 없습니다. 필요한 경우 `--set-size` 등 인자를 직접 지정해 덮어쓸 수 있습니다.
+`run_gpt_tests.py`는 `config/system_prompt.txt`에 저장된 시스템 프롬프트와 기타 기본값을 자동으로 사용하므로 별도의 인자를 전달할 필요가 없습니다. 필요한 경우 `--set-size` 등 인자를 직접 지정해 덮어쓸 수 있습니다.
 
 ## 확장 가능성
 
