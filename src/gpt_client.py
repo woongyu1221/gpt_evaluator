@@ -1,11 +1,13 @@
 """GPT API와 통신하기 위한 클라이언트 모듈"""
 
-import openai
 import random
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from openai import OpenAI
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .evaluator import ResponseEvaluator
 
 
 class GPTClient:
@@ -42,6 +44,7 @@ class GPTClient:
         output_dir: str,
         system_prompt: str = "",
         answer_file: Optional[str] = None,
+        evaluator: Optional["ResponseEvaluator"] = None,
         **kwargs,
     ) -> None:
         """`test_questions.txt`에서 무작위 테스트 세트를 생성하고 GPT 응답을 저장"""
@@ -86,6 +89,8 @@ class GPTClient:
 
         out_dir = Path(output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
+
+        results_list = []
 
         total_questions = len(questions)
         if set_size > total_questions:
@@ -177,3 +182,4 @@ class GPTClient:
                         f"전체 평균 점수(4속성 평균): {overall_avg:.4f}\n"
                     )
                     f.write(f"(참고) exact match: {exact_avg:.4f}\n")
+
