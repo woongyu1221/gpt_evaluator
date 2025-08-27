@@ -136,3 +136,15 @@ python scripts/run_gpt_tests.py
 - 결과 저장 및 분석 기능
 - 다양한 GPT 모델 지원
 - 배치 프로세싱 지원
+
+### 빠른 실행
+```bash
+#라이브러리 다운
+pip install -r requirements.txt
+
+# 질문·정답 텍스트 생성 (data/raw/test_case.csv 필요)
+python scripts/make_csv.py
+
+# 무작위 테스트 세트에 대해 GPT 분류 및 평가 실행
+python scripts/run_gpt_tests.py
+```
