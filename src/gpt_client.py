@@ -89,6 +89,12 @@ class GPTClient:
         total_questions = len(questions)
         if set_size > total_questions:
             set_size = total_questions
+        results_list = []
+        evaluator = None
+        if answers:
+            from .evaluator import ResponseEvaluator
+
+            evaluator = ResponseEvaluator(self)
 
         for i in range(set_count):
             indices = random.sample(range(total_questions), set_size)
@@ -116,7 +122,7 @@ class GPTClient:
             pred_file = out_dir / f"predictions_set_{i+1}.txt"
             pred_file.write_text("\n".join(pred_lines), encoding="utf-8")
 
-            if answers:
+            if answers and evaluator:
                 gold_lines = []
                 for idx, _ in sampled:
                     if idx in answers:
@@ -124,10 +130,43 @@ class GPTClient:
                 gold_file = out_dir / f"gold_set_{i+1}.txt"
                 gold_file.write_text("\n".join(gold_lines), encoding="utf-8")
 
-                from .evaluator import ResponseEvaluator
-
-                evaluator = ResponseEvaluator(self)
                 report_file = out_dir / f"score_report_set_{i+1}.txt"
-                evaluator.evaluate_from_files(
+                result = evaluator.evaluate_from_files(
                     str(gold_file), str(pred_file), str(report_file)
                 )
+                results_list.append(result)
+
+        if results_list:
+            summary_file = out_dir / "score_report_summary.txt"
+            with summary_file.open("w", encoding="utf-8") as f:
+                for idx, res in enumerate(results_list, 1):
+                    f.write(f"===== 세트 {idx} =====\n")
+                    f.write(f"샘플 수: {res['total_samples']}\n")
+                    for attr in evaluator.ATTRS:
+                        f.write(f"{attr}: {res['slot_accuracy'][attr]:.4f}\n")
+                    f.write(
+                        f"전체 평균 점수(4속성 평균): {res['overall_average']:.4f}\n"
+                    )
+                    f.write(f"(참고) exact match: {res['exact_match']:.4f}\n\n")
+
+                total_samples = sum(r["total_samples"] for r in results_list)
+                slot_totals = {attr: 0.0 for attr in evaluator.ATTRS}
+                exact_total = 0.0
+                for r in results_list:
+                    exact_total += r["exact_match"] * r["total_samples"]
+                    for attr in evaluator.ATTRS:
+                        slot_totals[attr] += r["slot_accuracy"][attr] * r["total_samples"]
+
+                if total_samples:
+                    f.write("===== 전체 합산 =====\n")
+                    slot_avgs = {
+                        attr: slot_totals[attr] / total_samples for attr in evaluator.ATTRS
+                    }
+                    for attr, acc in slot_avgs.items():
+                        f.write(f"{attr}: {acc:.4f}\n")
+                    overall_avg = sum(slot_avgs.values()) / len(slot_avgs)
+                    exact_avg = exact_total / total_samples
+                    f.write(
+                        f"전체 평균 점수(4속성 평균): {overall_avg:.4f}\n"
+                    )
+                    f.write(f"(참고) exact match: {exact_avg:.4f}\n")
