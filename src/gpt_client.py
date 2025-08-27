@@ -79,7 +79,7 @@ class GPTClient:
 
         for i in range(set_count):
             sampled = random.sample(questions, set_size)
-            prompt = "\n".join(f"{j+1}. {q}" for j, (_, q) in enumerate(sampled))
+            prompt = "\n".join(f"{idx}. {q}" for idx, q in sampled)
             response = self.get_response(prompt, system_prompt, **kwargs)
             q_file = out_dir / f"questions_set_{i+1}.txt"
             pred_file = out_dir / f"predictions_set_{i+1}.txt"
@@ -88,9 +88,9 @@ class GPTClient:
 
             if answers:
                 gold_lines = []
-                for j, (idx, _) in enumerate(sampled):
+                for idx, _ in sampled:
                     if idx in answers:
-                        gold_lines.append(f"{j+1}. {','.join(answers[idx])}")
+                        gold_lines.append(f"{idx}. {','.join(answers[idx])}")
                 gold_file = out_dir / f"gold_set_{i+1}.txt"
                 gold_file.write_text("\n".join(gold_lines), encoding="utf-8")
 
