@@ -12,12 +12,16 @@ gpt_evaluator/
 │   ├── evaluator.py      # 답변 평가 로직
 │   └── config.py         # 설정 관리
 ├── scripts/              # 유틸리티 스크립트
-│   ├── make_csv.py       # 원본 CSV를 질문/정답 파일로 변환
-│   └── run_gpt_tests.py  # 무작위 테스트 세트 실행
+│   ├── make_csv.py              # 원본 CSV를 질문/정답 파일로 변환
+│   ├── run_gpt_tests.py         # 무작위 테스트 세트 실행 (GPT 호출)
+│   └── prepare_and_eval.py      # 로컬 예측 번호 매핑 + 평가 (오프라인)
 ├── config/               # 설정 파일
 │   ├── config.json       # 평가 기준 설정
 │   └── system_prompt.txt # 기본 시스템 프롬프트
-└── data/                 # 데이터 저장 디렉토리
+├── tests/                # 로컬 평가용 샘플 데이터
+│   ├── raw/              # 원본 질문·예측·정답 텍스트
+│   └── processed/        # 번호 매핑된 예측 및 리포트 출력
+└── data/                 # 데이터 저장 디렉토리 (대규모 실험)
     ├── raw/              # 원본 CSV 등
     ├── processed/        # 질문·정답 텍스트
     └── results/          # GPT 결과 및 보고서
@@ -29,14 +33,13 @@ gpt_evaluator/
 - OpenAI GPT API와의 통신을 담당
 - `gpt-4o` 모델을 사용하며 시스템 프롬프트와 질문을 전달해 답변을 생성
 - API 호출 및 응답 처리
-- 에러 핸들링
-- 기본 `temperature`는 0.4이며 필요에 따라 `get_response` 호출 시 변경 가능
+- 기본 `temperature`는 0.4이며 필요 시 `get_response` 호출 인자로 조정 가능
+- `run_test_sets(...)`는 무작위로 질문 묶음을 만들고, 응답/정답/리포트를 `data/results/<타임스탬프>/`에 저장
 
 ### ResponseEvaluator (`src/evaluator.py`)
-- 답변 평가 로직 구현
-- 평가 프롬프트 생성
-- 평가 결과 파싱 및 구조화
-- 오답 사례에 대해 정답과 예측을 포함한 보고서 저장
+- 파일 기반 평가: `'번호. 라벨1,라벨2,라벨3,라벨4'` 형식을 파싱하여 슬롯 정확도/Exact Match 계산
+- 속성 이름: `유형, 극성, 시제, 확실성`
+- 리포트 저장: 요약 지표와 오답(일부 샘플) 출력
 
 ### Config (`src/config.py`)
 - 설정 파일 로드 및 관리
@@ -50,7 +53,7 @@ gpt_evaluator/
 OPENAI_API_KEY=your-api-key-here
 ```
 
-`config/config.json` 파일에서는 평가 기준을 구성합니다:
+`config/config.json` 파일은 GPT에게 평가 프롬프트를 만들 때 사용할 일반적 기준(설명용)을 담습니다. 파일 기반 채점에는 직접 사용되지 않습니다:
 
 ```json
 {
@@ -86,7 +89,7 @@ python scripts/make_csv.py
 - `data/raw/test_case.csv`을 읽어 `data/processed/test_questions.txt`,
   `data/processed/test_answers.txt`를 생성합니다.
 
-5. 사용 예시
+5. 사용 예시 (Python)
 ```python
 from src.config import Config
 from src.gpt_client import GPTClient
@@ -116,7 +119,7 @@ result = evaluator.evaluate_response(
 )
 ```
 
-### 명령줄 실행
+### 명령줄 실행 (GPT 호출 기반)
 
 데이터를 준비한 뒤에는 다음 스크립트들로 전체 과정을 실행할 수 있습니다.
 
@@ -128,7 +131,31 @@ python scripts/make_csv.py
 python scripts/run_gpt_tests.py
 ```
 
-`run_gpt_tests.py`는 `config/system_prompt.txt`에 저장된 시스템 프롬프트와 기타 기본값을 자동으로 사용하므로 별도의 인자를 전달할 필요가 없습니다. 필요한 경우 `--set-size` 등 인자를 직접 지정해 덮어쓸 수 있습니다.
+`run_gpt_tests.py`는 `config/system_prompt.txt`에 저장된 시스템 프롬프트와 기본값을 사용합니다. 필요한 경우 `--set-size`, `--set-count`, `--question-file`, `--answer-file`, `--output-dir` 등을 조정할 수 있습니다.
+
+### 로컬 오프라인 평가 (tests/raw → tests/processed)
+
+GPT 호출 없이, 이미 생성된 예측을 질문 번호에 맞춰 붙이고 정답과 비교하여 채점할 수 있습니다. 다음 레이아웃을 사용하세요:
+
+- `tests/raw/questions.txt`    예: `12345. 질문 내용`
+- `tests/raw/prediction.txt`   예: `사실형,부정,과거,확실`
+- `tests/raw/answers.txt`      예: `12345. 사실형,부정,과거,확실`
+
+실행:
+
+```bash
+python scripts/prepare_and_eval.py
+```
+
+출력:
+
+- `tests/processed/prediction_numbered.txt`  → 예측에 번호가 매겨진 파일 `"번호. 라벨1,라벨2,라벨3,라벨4"`
+- `tests/processed/score_report.txt`         → 요약 지표와 오답 예시 리포트
+
+동작 요약:
+- `questions.txt`에서 상단부터 번호를 추출하여 `prediction.txt` 각 줄 앞에 순서대로 부여
+- `answers.txt`와 교집합 번호만 채점 대상
+- 오답 상세는 예시 10개만 표시하며, 스크립트 내 `MAX_WRONG_EXAMPLES`로 조정 가능
 
 ## 확장 가능성
 
@@ -146,8 +173,10 @@ pip install -r requirements.txt
 # 질문·정답 텍스트 생성 (data/raw/test_case.csv 필요)
 python scripts/make_csv.py
 
-# 무작위 테스트 세트에 대해 GPT 분류 및 평가 실행
-# test 데이터셋 크기 지정
-python scripts/run_gpt_tests.py
+# 무작위 테스트 세트에 대해 GPT 분류 및 평가 실행 (결과는 data/results/<타임스탬프>/ 저장)
+python scripts/run_gpt_tests.py  # 필요 시 --set-size, --set-count 등 옵션 지정
+
+# 오프라인: tests/raw → 번호 매핑 및 채점 결과를 tests/processed 에 저장
+python scripts/prepare_and_eval.py
 
 ```

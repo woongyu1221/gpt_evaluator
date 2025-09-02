@@ -3,6 +3,8 @@
 import random
 import re
 from pathlib import Path
+import shutil
+from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 from openai import OpenAI
 
@@ -90,6 +92,18 @@ class GPTClient:
         out_dir = Path(output_dir)
         out_dir.mkdir(parents=True, exist_ok=True)
 
+        # 각 실행마다 타임스탬프 하위 폴더 생성
+        run_ts = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        run_dir = out_dir / run_ts
+        run_dir.mkdir(parents=True, exist_ok=False)
+
+        # 사용한 시스템 프롬프트를 1개 파일로 저장
+        try:
+            prompt_file = run_dir / "system_prompt.txt"
+            prompt_file.write_text(system_prompt or "", encoding="utf-8")
+        except Exception:
+            pass
+
         results_list = []
 
         total_questions = len(questions)
@@ -116,7 +130,7 @@ class GPTClient:
             response = self.get_response(prompt, system_prompt, **kwargs)
 
             # Save the question set with the original numbering
-            q_file = out_dir / f"questions_set_{i+1}.txt"
+            q_file = run_dir / f"questions_set_{i+1}.txt"
             q_file.write_text(prompt, encoding="utf-8")
 
             # Post-process GPT response to ensure numbering matches the
@@ -131,7 +145,7 @@ class GPTClient:
                     _, line = line.split(".", 1)
                 pred_lines.append(f"{idx}. {line.strip()}")
 
-            pred_file = out_dir / f"predictions_set_{i+1}.txt"
+            pred_file = run_dir / f"predictions_set_{i+1}.txt"
             pred_file.write_text("\n".join(pred_lines), encoding="utf-8")
 
             if answers and evaluator:
@@ -139,17 +153,17 @@ class GPTClient:
                 for idx, _ in sampled:
                     if idx in answers:
                         gold_lines.append(f"{idx}. {','.join(answers[idx])}")
-                gold_file = out_dir / f"gold_set_{i+1}.txt"
+                gold_file = run_dir / f"gold_set_{i+1}.txt"
                 gold_file.write_text("\n".join(gold_lines), encoding="utf-8")
 
-                report_file = out_dir / f"score_report_set_{i+1}.txt"
+                report_file = run_dir / f"score_report_set_{i+1}.txt"
                 result = evaluator.evaluate_from_files(
                     str(gold_file), str(pred_file), str(report_file)
                 )
                 results_list.append(result)
 
         if results_list:
-            summary_file = out_dir / "score_report_summary.txt"
+            summary_file = run_dir / "score_report_summary.txt"
             with summary_file.open("w", encoding="utf-8") as f:
                 wrong_all = []
                 for idx, res in enumerate(results_list, 1):
@@ -162,11 +176,11 @@ class GPTClient:
                     )
                     f.write(f"(참고) exact match: {res['exact_match']:.4f}\n")
                     wrong_samples = res.get("wrong_samples")
-                    if wrong_samples:
-                        f.write("----- 오답 상세 -----\n")
-                        for qid, g, p in wrong_samples:
-                            f.write(f"{qid}. 정답: {g} | 예측: {p}\n")
-                            wrong_all.append((idx, qid, g, p))
+                    # if wrong_samples:
+                    #     f.write("----- 오답 상세 -----\n")
+                    #     for qid, g, p in wrong_samples:
+                    #         f.write(f"{qid}. 정답: {g} | 예측: {p}\n")
+                    #         wrong_all.append((idx, qid, g, p))
                     f.write("\n")
 
                 total_samples = sum(r["total_samples"] for r in results_list)

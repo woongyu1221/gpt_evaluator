@@ -26,8 +26,8 @@ def main() -> None:
     parser.add_argument(
         "--question-file", default="data/processed/test_questions.txt"
     )
-    parser.add_argument("--set-size", type=int, default=50)
-    parser.add_argument("--set-count", type=int, default=2)
+    parser.add_argument("--set-size", type=int, default=300)
+    parser.add_argument("--set-count", type=int, default=3)
     parser.add_argument("--output-dir", default="data/results")
     parser.add_argument("--system-prompt", default=None)
     parser.add_argument(
